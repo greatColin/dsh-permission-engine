@@ -6,7 +6,7 @@
   "main": "lib/index.js",
   "exports": {
     ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
-    "./client": { "types": "./lib/types/client/index.d.ts", "default": "./lib/client.js" },
+    "./client": { "types": "./lib/types/client/index.d.ts", "default": "./lib/client.bundle.js" },
     "./chain/link": { "types": "./lib/types/chain.d.ts", "default": "./lib/chain/link.js" },
     "./chain/chain": { "types": "./lib/types/chain.d.ts", "default": "./lib/chain/chain.js" },
     "./services/engine": { "types": "./lib/types/services.d.ts", "default": "./lib/services/PermissionEngine.js" },
@@ -15,6 +15,7 @@
   "files": [
     "lib/index.js",
     "lib/client.js",
+    "lib/client.bundle.js",
     "lib/chain/**/*.js",
     "lib/integration/**/*.js",
     "lib/services/**/*.js",
@@ -22,9 +23,13 @@
     "lib/ui/**/*.js",
     "lib/types/**/*.d.ts"
   ],
+  "scripts": {
+    "test": "vitest run",
+    "build:client": "node ../../scripts/bundle-client.mjs"
+  },
   "dsh": {
     "client": {
-      "inject": ["slots", "locale"],
+      "inject": ["slots", "locale", "host"],
       "platform": "web"
     }
   },
@@ -33,8 +38,5 @@
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/cordis": { "optional": true }
-  },
-  "scripts": {
-    "test": "vitest run"
   }
 }

@@ -5,6 +5,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "build:client": "node scripts/bundle-client.mjs",
     "demo:host": "node demo/host-demo.mjs",
     "demo:server": "node demo/serve.mjs"
   },

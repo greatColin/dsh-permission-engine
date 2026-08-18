@@ -6,14 +6,11 @@ Build the `@yourname/dsh-permission-engine` DSH plugin: a configurable responsib
 
 ## Current Status
 
-Phase 1 demo complete. The workspace has:
+First-phase integration shell is complete. The plugin can now be dropped into DSH by adding it to `cordis.yml` / `cordis.patch.yml`. The CLIENT half registers a `settings.section` page, and the HOST half exposes `permissionEngine.*` RPC handlers via `ctx.harness.handle`. The settings page is a placeholder; full chain editing is the next phase.
 
-- Framework package with chain core, loader/sandbox, engine, DSH hooks, audit log, settings registration, and full-flow integration tests.
-- Defaults package with 6 default links (L0-L4) and their own test suite.
-- A runnable host demo (`pnpm demo:host`) and a browser demo server (`pnpm demo:server`) that exposes REST endpoints over the engine.
-- 59/59 unit and integration tests passing.
-
-Next: integrate the browser half (`lib/client.js`) with DSH slots and `host.call` RPC, then build a real settings page.
+- 59/59 tests pass.
+- `pnpm demo:host` / `pnpm demo:server` still work.
+- `pnpm build:client` regenerates the DSH-ready `lib/client.bundle.js`.
 
 ## Completed Steps
 
@@ -50,21 +47,19 @@ Next: integrate the browser half (`lib/client.js`) with DSH slots and `host.call
 - [x] L4 Remember
 - [x] 27 defaults-package tests
 
-### Phase 1 demo
+### Phase 1 demo + integration shell
 
 - [x] `demo/host-demo.mjs` — console demo of the host half
 - [x] `demo/serve.mjs` + `demo/client-demo.html` — browser demo with React + REST endpoints
 - [x] `package.json` demo scripts
+- [x] `lib/client.js` registers a `settings.section` slot with i18n
+- [x] HOST-side RPC handlers: `permissionEngine.listChains`, `permissionEngine.runSelfTest`, `permissionEngine.updateChain`, `permissionEngine.reload`
+- [x] `scripts/bundle-client.mjs` + `pnpm build:client` produces DSH-ready `lib/client.bundle.js`
+- [x] `README.md` with DSH integration instructions
 
-## In Progress
+## Next Step
 
-### Step 3c: CLIENT half UI integration
-
-- [ ] Update `lib/client.js` to inject `host` and register a `settings.section` slot
-- [ ] Implement React settings page using `host.call` for list/update/reload/self-test
-- [ ] Add host-side `harness.handle` RPC handlers
-- [ ] Add i18n keys via `ctx.locale.register`
-- [ ] Client-side component tests with mock `ctx`
+Add full chain editing in the CLIENT half (enable/disable, reorder, inline link editor) and corresponding RPC handlers. Per the development rules, I will stop after completing that full Step 3c and ask for your review before moving to Step 4.
 
 ## Key Design Decisions
 
@@ -89,6 +84,9 @@ pnpm demo:host
 
 # Browser demo server (visit the printed URL)
 pnpm demo:server
+
+# Regenerate the DSH client bundle
+pnpm build:client
 ```
 
 ## References
