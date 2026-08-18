@@ -1,5 +1,5 @@
 export function installPermissionSettings(ctx, config, engine) {
-  const settings = ctx.settings
+  const settings = ctx.get('settings')
   if (!settings) {
     ctx.logger?.warn('[permission-engine] settings service unavailable; using composed config only')
     return

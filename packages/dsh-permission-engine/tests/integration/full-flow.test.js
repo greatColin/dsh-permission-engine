@@ -25,7 +25,18 @@ class SafeRead extends ChainLink {
 function makeCtx() {
   const listeners = new Map()
   const auditRecords = []
-  return {
+  const settings = {
+    register: vi.fn((ns, opts) => {
+      if (opts.onChange) opts.onChange()
+    }),
+  }
+  const storageDomain = {
+    open: vi.fn(async () => ({
+      tables: { records: { put: async (id, value) => auditRecords.push({ id, value }) } },
+      close: vi.fn(),
+    })),
+  }
+  const ctx = {
     logger: { info: vi.fn(), warn: vi.fn() },
     provide: vi.fn(),
     on: (event, handler) => {
@@ -36,24 +47,19 @@ function makeCtx() {
       const dispose = fn()
       return { dispose }
     },
-    settings: {
-      register: vi.fn((ns, opts) => {
-        if (opts.onChange) opts.onChange()
-      }),
-    },
-    storageDomain: {
-      open: vi.fn(async () => ({
-        tables: { records: { put: async (id, value) => auditRecords.push({ id, value }) } },
-        close: vi.fn(),
-      })),
-    },
+    settings,
+    storageDomain,
     get: vi.fn((key) => {
       if (key === 'sandbox') return { mode: 'workspace-write' }
+      if (key === 'settings') return settings
+      if (key === 'storageDomain') return storageDomain
+      if (key === 'harness') return undefined
       return undefined
     }),
     _listeners: listeners,
     _auditRecords: auditRecords,
   }
+  return ctx
 }
 
 function makeExec(command) {

@@ -5,7 +5,7 @@ export class AuditLogService {
   }
 
   async init() {
-    const storageDomain = this.ctx.storageDomain
+    const storageDomain = this.ctx.get('storageDomain')
     if (!storageDomain) {
       this.ctx.logger?.warn('[permission-engine] storageDomain unavailable; audit logging disabled')
       return
