@@ -19,4 +19,15 @@ export function registerHostRpc(ctx, engine) {
     if (Array.isArray(order)) engine.reorder(order)
     return { ok: true }
   })
+
+  harness.handle('permissionEngine.addInlineLink', ({ id, name, description, code }) => {
+    const result = engine.loadInlineLink(id, name, description, code)
+    if (result.error) return { ok: false, error: result.error.message }
+    return { ok: true, id }
+  })
+
+  harness.handle('permissionEngine.removeLink', ({ id }) => {
+    engine.unregisterLink(id)
+    return { ok: true }
+  })
 }

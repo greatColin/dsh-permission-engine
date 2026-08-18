@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
-import { ChainLink } from './link.js'
+import { ChainLink, PlainLink } from './link.js'
 
 const safeConsole = {
   log: (...args) => console.log(...args),
@@ -79,6 +79,9 @@ export class Loader {
 
   #coerceToLink(value) {
     if (value instanceof ChainLink) return value
+    if (value && typeof value === 'object' && typeof value.decide === 'function') {
+      return new PlainLink(value)
+    }
     if (typeof value === 'function') {
       const instance = new value()
       if (!(instance instanceof ChainLink)) {
@@ -86,6 +89,6 @@ export class Loader {
       }
       return instance
     }
-    throw new TypeError(`exported value must be a ChainLink instance or class`)
+    throw new TypeError(`exported value must be a ChainLink instance/class or a plain object with decide()`)
   }
 }

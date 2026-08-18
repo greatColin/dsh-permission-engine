@@ -42,6 +42,31 @@ export class ChainLink {
   }
 }
 
+export class PlainLink extends ChainLink {
+  constructor(obj) {
+    super()
+    this.id = obj.id
+    this.name = obj.name
+    this.description = obj.description
+    this._decide = obj.decide?.bind(this)
+    this._selfTest = obj.selfTest?.bind(this)
+    this._remember = obj.remember?.bind(this)
+  }
+
+  decide(ctx) {
+    return this._decide?.(ctx)
+  }
+
+  async runSelfTest() {
+    if (this._selfTest) return this._selfTest()
+    return super.runSelfTest()
+  }
+
+  async remember(input, decision) {
+    return this._remember?.(input, decision)
+  }
+}
+
 export function defineLink(linkOrClass, config) {
   if (linkOrClass instanceof ChainLink) return linkOrClass
   return new linkOrClass(config)

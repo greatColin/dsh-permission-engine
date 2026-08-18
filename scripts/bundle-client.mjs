@@ -16,6 +16,12 @@ const body = source
   .replace(/^export const inject = /m, 'const inject = ')
   .replace(/^export function apply/m, 'function apply')
 
+const exportLines = `
+    exports.name = name;
+    exports.inject = inject;
+    exports.apply = apply;
+`
+
 const bundle = `// AUTO-GENERATED from lib/client.js — run \`pnpm build:client\` to regenerate
 window.__ModuleLoader__.load({
   id: '@yourname/dsh-permission-engine',
@@ -23,8 +29,7 @@ window.__ModuleLoader__.load({
     var module = { exports: {} };
     var exports = module.exports;
 
-${body.split('\n').map((line) => '    ' + line).join('\n')}
-
+${body.split('\n').map((line) => '    ' + line).join('\n')}${exportLines}
     return module.exports;
   },
 });

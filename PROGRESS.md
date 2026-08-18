@@ -58,9 +58,23 @@ First-phase integration shell is complete. The plugin can now be dropped into DS
 - [x] `lib/bundle.cordis.patch.yml` + `dsh.bundle.patch` metadata for `dsh plugin add`
 - [x] `README.md` with both npx and source-monorepo integration instructions
 
+### Step 3c: Full chain editing UI (CLIENT half) + inline link support
+
+- [x] Settings UI component: fetches and displays permission chains grouped by source (dev/defaults/inline/user)
+- [x] Enable/disable toggle per link via `permissionEngine.updateChain`
+- [x] Move up/down reorder via `permissionEngine.updateChain({ order: [...] })`
+- [x] Self-test button per link with modal result display via `permissionEngine.runSelfTest`
+- [x] Remove link button per link via `permissionEngine.removeLink`
+- [x] Inline link editor form: id, name, description, code textarea; adds link via `permissionEngine.addInlineLink`
+- [x] `PlainLink` class in `lib/chain/link.js` to support plain objects with `decide` method (not just ChainLink subclasses)
+- [x] Loader updated to coerce plain objects to `PlainLink`
+- [x] `scripts/bundle-client.mjs` fixed to emit `exports.name`, `exports.inject`, `exports.apply`
+- [x] New RPC handlers: `permissionEngine.addInlineLink`, `permissionEngine.removeLink`
+- [x] All 59/59 tests pass
+
 ## Next Step
 
-Add full chain editing in the CLIENT half (enable/disable, reorder, inline link editor) and corresponding RPC handlers. Per the development rules, I will stop after completing that full Step 3c and ask for your review before moving to Step 4.
+Step 4: Persistence and configuration UI improvements (details TBD based on user feedback).
 
 ## Key Design Decisions
 
