@@ -1,0 +1,27 @@
+{
+  "name": "@yourname/dsh-permission-engine-defaults",
+  "version": "0.1.0",
+  "description": "Default links for dsh-permission-engine (L0 hard-deny / L1 safe-read / L2 allowlist / L3 risk+LLM / L4 memory)",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/risk.js",
+    "lib/patterns/**/*.js",
+    "lib/links/**/*.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "peerDependencies": {
+    "@yourname/dsh-permission-engine": "workspace:^0.1.0"
+  },
+  "devDependencies": {
+    "@yourname/dsh-permission-engine": "workspace:*"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}

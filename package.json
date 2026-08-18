@@ -1,0 +1,13 @@
+{
+  "name": "dsh-permission-engine-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.0"
+  },
+  "packageManager": "pnpm@11.22.0"
+}
