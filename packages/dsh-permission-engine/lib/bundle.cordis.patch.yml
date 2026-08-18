@@ -1,0 +1,9 @@
+# DSH profile bundle patch for dsh-permission-engine.
+# This row is inserted into the profile plugin tree when the package is added
+# as a profile bundle via `dsh plugin --profile web add <pkg>`.
+
+- insert:
+    - id: permission-engine
+      name: '@yourname/dsh-permission-engine'
+      config:
+        useDefaults: true

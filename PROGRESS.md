@@ -55,7 +55,8 @@ First-phase integration shell is complete. The plugin can now be dropped into DS
 - [x] `lib/client.js` registers a `settings.section` slot with i18n
 - [x] HOST-side RPC handlers: `permissionEngine.listChains`, `permissionEngine.runSelfTest`, `permissionEngine.updateChain`, `permissionEngine.reload`
 - [x] `scripts/bundle-client.mjs` + `pnpm build:client` produces DSH-ready `lib/client.bundle.js`
-- [x] `README.md` with DSH integration instructions
+- [x] `lib/bundle.cordis.patch.yml` + `dsh.bundle.patch` metadata for `dsh plugin add`
+- [x] `README.md` with both npx and source-monorepo integration instructions
 
 ## Next Step
 

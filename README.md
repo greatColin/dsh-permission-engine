@@ -23,9 +23,31 @@ pnpm build:client         # regenerate lib/client.bundle.js from lib/client.js
 
 ## How to plug into DSH
 
-### 1. Put the packages where DSH can find them
+There are two ways to use this plugin with DSH:
 
-Because DSH's rc packages depend on internal unpublished packages, you need to work inside a DSH source checkout. The simplest way is to copy or symlink this repo's two packages into DSH's workspace:
+1. **npx / prebuilt DSH CLI** — use `dsh plugin --profile web add <path>`.
+2. **DSH source monorepo** — symlink/copy packages into the workspace.
+
+### Option A: npx DSH CLI (no source checkout)
+
+This works with `npx @deepseek-ai/dsh web`.
+
+```bash
+# 1. Install the framework plugin as a profile bundle
+npx @deepseek-ai/dsh plugin --profile web add /absolute/path/to/dsh-permission-engine/packages/dsh-permission-engine
+
+# 2. Install the defaults package so the framework can load it
+npx @deepseek-ai/dsh plugin --profile web add /absolute/path/to/dsh-permission-engine/packages/dsh-permission-engine-defaults
+
+# 3. Start DSH web
+npx @deepseek-ai/dsh web
+```
+
+The framework package declares `dsh.bundle.patch`, so `dsh plugin add` automatically inserts it into the web profile layer stack.
+
+### Option B: DSH source monorepo
+
+If you have the DSH source checkout and want to develop side-by-side:
 
 ```bash
 # inside your DSH checkout
@@ -33,30 +55,17 @@ ln -s /path/to/dsh-permission-engine/packages/dsh-permission-engine packages/plu
 ln -s /path/to/dsh-permission-engine/packages/dsh-permission-engine-defaults packages/plugins/dsh-permission-engine-defaults
 ```
 
-Then add the package paths to DSH's `pnpm-workspace.yaml` so pnpm links them.
-
-### 2. Enable the plugin in DSH config
-
-Create or edit `cordis.patch.yml` (or the equivalent DSH config file) and add:
+Then add the plugin paths to DSH's `pnpm-workspace.yaml`:
 
 ```yaml
-plugins:
-  permission-engine:
-    package: '@yourname/dsh-permission-engine'
-    # optional: use your own defaults package or disable defaults
-    # config:
-    #   useDefaults: true
+packages:
+  - 'packages/*'
+  - 'packages/plugins/*'
 ```
 
-When DSH boots it will:
+Run `pnpm install` in the DSH checkout to link them, then boot DSH normally.
 
-- Load the HOST half from `lib/index.js`.
-- Register the `PermissionEngine` service.
-- Hook `tools/pre-execute` so every bash/fs/web tool decision flows through the chain.
-- Expose RPC handlers on `ctx.harness.handle('permissionEngine.*', ...)`.
-- Serve the CLIENT half bundle (`lib/client.bundle.js`) through DSH's plugin loader.
-
-### 3. Open the settings page
+### Open the settings page
 
 The CLIENT half injects a tab into `settings.section` with id `permission-engine`. In DSH's settings UI you will see a **Permission Engine** tab. Right now it shows a placeholder; editing will come in the next phase.
 

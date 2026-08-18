@@ -16,6 +16,7 @@
     "lib/index.js",
     "lib/client.js",
     "lib/client.bundle.js",
+    "lib/bundle.cordis.patch.yml",
     "lib/chain/**/*.js",
     "lib/integration/**/*.js",
     "lib/services/**/*.js",
@@ -28,6 +29,9 @@
     "build:client": "node ../../scripts/bundle-client.mjs"
   },
   "dsh": {
+    "bundle": {
+      "patch": "./lib/bundle.cordis.patch.yml"
+    },
     "client": {
       "inject": ["slots", "locale", "host"],
       "platform": "web"
