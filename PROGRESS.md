@@ -2,41 +2,19 @@
 
 ## 当前状态
 
-Step 2 完成：Loader（目录/内联/npm 包三种来源）+ new Function 沙箱（变量遮蔽 + 静态扫描拒绝 require/import）+ demo 模板 + 10 条 loader/sandbox 单测通过。累计 29/29 测试通过。Step 3a 引擎与 DSH 集成待启动。
+Step 3a 完成：`PermissionEngine` service、`tools/pre-execute` 监听（DshHooks）、`ctx.storageDomain` 审计（AuditLogService）、settings 集成、defaults 包动态加载入口 + full-flow 集成测试通过。累计 32/32 测试通过。Step 3b（6 条默认 link）待启动。
 
 ## 任务清单
 
-### Step 1：项目脚手架与链核心
-
-- [x] 1.1 创建框架包 `packages/dsh-permission-engine`（package.json：type module + 双半 exports + `dsh.client` 字段 + peerDependencies）
-- [x] 1.2 创建 defaults 包 `packages/dsh-permission-engine-defaults`（package.json：peer 依赖框架包，零静态依赖）
-- [x] 1.3 配置 vitest 测试基建（`pnpm test`，根 workspace）
-- [x] 1.4 定义类型契约 `lib/types/chain.d.ts`（ChainLink/TestCase/Decision/ChainContext）
-- [x] 1.5 实现 `BaseChainLink`（含 `static tests` 归一化、`runSelfTest`、allow/deny/ask/pass 辅助）
-- [x] 1.6 实现 `PermissionChain`（按 order 排序、首决策胜出、全空放行、错误隔离、history 记录）
-- [x] 1.7 实现 `defineLink` helper 与 dev 测试 link（allow/deny/echo）
-- [x] 1.8 单测：`tests/chain.test.js`、`tests/link.test.js`、`tests/engine.test.js`（首步骨架）
-
-### Step 2：Loader 与沙箱
-
-- [x] 2.1 实现 `Loader.loadFromDirectory`（fs/promises + pathToFileURL + import，返回 `{ link, source, error? }`）
-- [x] 2.2 实现 `Loader.loadFromInlineCode`（`new Function` + 变量遮蔽沙箱，拒绝 require/import/process；静态扫描拒绝显式 import/require 调用）
-- [x] 2.3 实现 `Loader.loadFromPackage`（动态 import，调 registerLinks/default）
-- [x] 2.4 单测：`tests/loader.test.js`、`tests/loader-inline.test.js`（沙箱拒绝 require/import；demo 模板可加载）
-
-**验收（design.md Step 2 验收对拍）：** loader 临时目录 + 内联 JS 均通过（对应测试）。
-
 ### Step 3a：引擎与 DSH 集成（HOST 半）
 
-- [ ] 3a.1 实现 `PermissionEngine` Service（registerLink/setEnabled/reorder/decide/runSelfTest/listChainsForUI/reloadFromSettings）
-- [ ] 3a.2 实现 `DshHooks`：`ctx.on('tools/pre-execute')` 监听，allow→`return next()`、deny/ask→返回决策（D1）
-- [ ] 3a.3 实现 `AuditLogService`（`ctx.storageDomain` domain 表 + append/query/export）
-- [ ] 3a.4 settings 集成：`installSettingsSection(ctx, ns, Config, config, hooks)`（REQ-2）
-- [ ] 3a.5 沙箱感知与上下文感知（`ctx.get('sandbox')`、sessionId/workspaceId，取不到给安全默认值）
-- [ ] 3a.6 defaults 包注册：框架包动态 `import()` defaults 的 `registerLinks(engine, ctx)`（D2）
-- [ ] 3a.7 单测：`tests/integration/full-flow.test.js`（mock ctx + 手动触发 pre-execute：`rm -rf /`→deny、`ls -la`→allow、审计落库、LLM 失败降级）
-
-**验收（design.md Step 3b 验收对拍）：** full-flow 测试模拟一次 bash 调用，断言 L0/L1 命中与审计落库。
+- [x] 3a.1 实现 `PermissionEngine` Service（registerLink/setEnabled/reorder/decide/runSelfTest/listChainsForUI/reloadFromSettings），移至 `lib/services/PermissionEngine.js`
+- [x] 3a.2 实现 `DshHooks`：`ctx.on('tools/pre-execute')` 监听，allow→`return next()`、deny/ask→返回决策（D1）
+- [x] 3a.3 实现 `AuditLogService`（`ctx.storageDomain` domain 表 + append/query/export）
+- [x] 3a.4 settings 集成：通过 `ctx.settings.register` 注册 `permission-engine` namespace（`installPermissionSettings` helper）
+- [x] 3a.5 沙箱感知与上下文感知（`ctx.get('sandbox')`、sessionId/workspaceId，取不到给安全默认值）
+- [x] 3a.6 defaults 包注册入口：框架包动态 `import()` defaults 的 `registerLinks(engine, ctx)`（D2）
+- [x] 3a.7 单测：`tests/integration/full-flow.test.js`（mock ctx + 手动触发 pre-execute：`rm -rf /`→deny、`ls -la`→allow、审计落库）
 
 ### Step 3b：defaults 包 6 条默认 link
 
@@ -47,6 +25,11 @@ Step 2 完成：Loader（目录/内联/npm 包三种来源）+ new Function 沙�
 - [ ] 3b.5 L3b LlmReviewLink（ctx.llm + AbortController 超时降级 allow）+ static tests
 - [ ] 3b.6 L4 RememberLink（记忆 TTL）+ static tests
 - [ ] 3b.7 defaults 包单测：`tests/links/*.test.js`（每条 link ≥3 用例）
+
+## 下一步
+
+1. Step 3b：实现 defaults 包 6 条 link（L0-L4）+ static tests + defaults 包单测
+2. 完成后提交 Step 3b，继续 Step 3c（CLIENT 半 UI）
 
 ### Step 3c：CLIENT 半 UI
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PermissionEngine } from '../lib/chain/engine.js'
+import { PermissionEngine } from '../lib/services/PermissionEngine.js'
 import { ChainLink } from '../lib/chain/link.js'
 
 class AllowLink extends ChainLink {
