@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DSH Permission Engine Demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 40px auto; padding: 0 20px; }
+    h1 { font-size: 1.5rem; }
+    .row { display: flex; gap: 8px; margin: 16px 0; }
+    input[type="text"] { flex: 1; padding: 8px; font-family: monospace; }
+    button { padding: 8px 16px; }
+    pre { background: #f4f4f4; padding: 12px; border-radius: 6px; overflow: auto; }
+    .allow { color: green; }
+    .deny { color: red; }
+    .ask { color: orange; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+    import React from 'https://esm.sh/react@18'
+    import { createRoot } from 'https://esm.sh/react-dom@18/client'
+
+    const { useState, useEffect } = React
+
+    async function api(path) {
+      const res = await fetch(path)
+      if (!res.ok) throw new Error(await res.text())
+      return res.json()
+    }
+
+    function App() {
+      const [command, setCommand] = useState('rm -rf /')
+      const [result, setResult] = useState(null)
+      const [chains, setChains] = useState(null)
+      const [error, setError] = useState(null)
+
+      useEffect(() => {
+        api('/api/chains').then(setChains).catch(setError)
+      }, [])
+
+      const decide = async () => {
+        setResult(null)
+        setError(null)
+        try {
+          setResult(await api(`/api/decide?command=${encodeURIComponent(command)}`))
+        } catch (e) {
+          setError(e)
+        }
+      }
+
+      const runSelfTest = async (id) => {
+        setError(null)
+        try {
+          const data = await api(`/api/selftest?id=${encodeURIComponent(id)}`)
+          alert(JSON.stringify(data, null, 2))
+        } catch (e) {
+          setError(e)
+        }
+      }
+
+      return React.createElement('div', null,
+        React.createElement('h1', null, 'DSH Permission Engine Demo'),
+        React.createElement('div', { className: 'row' },
+          React.createElement('input', {
+            type: 'text',
+            value: command,
+            onChange: (e) => setCommand(e.target.value),
+            onKeyDown: (e) => e.key === 'Enter' && decide(),
+          }),
+          React.createElement('button', { onClick: decide }, 'Decide'),
+        ),
+        result && React.createElement('pre', null,
+          'Command: ', result.command, '\n',
+          'Decision: ',
+          React.createElement('span', { className: result.decision.kind }, result.decision.kind),
+          result.decision.reason ? `\nReason: ${result.decision.reason}` : '',
+          result.decision.degraded ? '\n(degraded)' : '',
+        ),
+        React.createElement('h2', null, 'Loaded chains'),
+        chains && React.createElement('table', null,
+          React.createElement('thead', null,
+            React.createElement('tr', null,
+              React.createElement('th', null, 'Source'),
+              React.createElement('th', null, 'ID'),
+              React.createElement('th', null, 'Name'),
+              React.createElement('th', null, 'Order'),
+              React.createElement('th', null, 'Enabled'),
+              React.createElement('th', null, 'Action'),
+            ),
+          ),
+          React.createElement('tbody', null,
+            chains.groups.flatMap((group) =>
+              group.links.map((link) =>
+                React.createElement('tr', { key: link.id },
+                  React.createElement('td', null, group.source),
+                  React.createElement('td', null, link.id),
+                  React.createElement('td', null, link.name),
+                  React.createElement('td', null, link.order),
+                  React.createElement('td', null, link.enabled ? 'yes' : 'no'),
+                  React.createElement('td', null,
+                    React.createElement('button', { onClick: () => runSelfTest(link.id) }, 'Self-test'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        error && React.createElement('pre', { style: { color: 'red' } }, String(error)),
+      )
+    }
+
+    createRoot(document.getElementById('root')).render(React.createElement(App))
+  </script>
+</body>
+</html>

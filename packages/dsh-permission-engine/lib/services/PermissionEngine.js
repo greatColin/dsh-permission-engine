@@ -97,7 +97,8 @@ export class PermissionEngine {
 
   async loadDefaults() {
     try {
-      const defaults = await import('@yourname/dsh-permission-engine-defaults')
+      const path = this.config.defaultsPackage ?? '@yourname/dsh-permission-engine-defaults'
+      const defaults = await import(path)
       const register = defaults.registerLinks ?? defaults.default
       if (typeof register === 'function') {
         await register(this, this.ctx)

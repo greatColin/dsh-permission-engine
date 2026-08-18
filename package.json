@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "demo:host": "node demo/host-demo.mjs",
+    "demo:server": "node demo/serve.mjs"
   },
   "devDependencies": {
     "vitest": "^2.1.0"
