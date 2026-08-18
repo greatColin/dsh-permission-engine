@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-Step 1 完成：双包脚手架 + 链核心（ChainLink/PermissionChain/PermissionEngine/defineLink + dev links）+ 19 条单测全部通过（`pnpm test`）。Step 2 Loader 与沙箱待启动。
+Step 2 完成：Loader（目录/内联/npm 包三种来源）+ new Function 沙箱（变量遮蔽 + 静态扫描拒绝 require/import）+ demo 模板 + 10 条 loader/sandbox 单测通过。累计 29/29 测试通过。Step 3a 引擎与 DSH 集成待启动。
 
 ## 任务清单
 
@@ -17,14 +17,12 @@ Step 1 完成：双包脚手架 + 链核心（ChainLink/PermissionChain/Permissi
 - [x] 1.7 实现 `defineLink` helper 与 dev 测试 link（allow/deny/echo）
 - [x] 1.8 单测：`tests/chain.test.js`、`tests/link.test.js`、`tests/engine.test.js`（首步骨架）
 
-**验收（对 design.md Step 2 验收对拍）：** 链核心单测通过（chain 6 + engine 6 + link 7 = 19 条）。AllowLink→DenyLink 对 `rm -rf /` deny、`ls -la` allow 的场景在 Step 2/3a 的 full-flow 测试覆盖。
-
 ### Step 2：Loader 与沙箱
 
-- [ ] 2.1 实现 `Loader.loadFromDirectory`（fs/promises + pathToFileURL + import，返回 `{ link, source, error? }`）
-- [ ] 2.2 实现 `Loader.loadFromInlineCode`（`new Function` + 变量遮蔽沙箱，拒绝 require/import/process）
-- [ ] 2.3 实现 `Loader.loadFromPackage`（动态 import，调 registerLinks/default）
-- [ ] 2.4 单测：`tests/loader.test.js`、`tests/loader-inline.test.js`（沙箱拒绝 require/import；demo 模板可加载）
+- [x] 2.1 实现 `Loader.loadFromDirectory`（fs/promises + pathToFileURL + import，返回 `{ link, source, error? }`）
+- [x] 2.2 实现 `Loader.loadFromInlineCode`（`new Function` + 变量遮蔽沙箱，拒绝 require/import/process；静态扫描拒绝显式 import/require 调用）
+- [x] 2.3 实现 `Loader.loadFromPackage`（动态 import，调 registerLinks/default）
+- [x] 2.4 单测：`tests/loader.test.js`、`tests/loader-inline.test.js`（沙箱拒绝 require/import；demo 模板可加载）
 
 **验收（design.md Step 2 验收对拍）：** loader 临时目录 + 内联 JS 均通过（对应测试）。
 
@@ -98,5 +96,5 @@ Step 1 完成：双包脚手架 + 链核心（ChainLink/PermissionChain/Permissi
 
 ## 下一步
 
-1. Step 2：实现 Loader（loadFromDirectory / loadFromInlineCode / loadFromPackage）与沙箱（new Function + 变量遮蔽），补 loader 单测
-2. 完成后提交 Step 1+2，继续 Step 3a 引擎与 DSH 集成
+1. Step 3a：实现 `PermissionEngine` 与 DSH 集成（`ctx.provide` service、`tools/pre-execute` 监听、`ctx.storageDomain` 审计、`installSettingsSection`、defaults 包动态加载、full-flow 集成测试）
+2. 完成后提交 Step 3a，继续 Step 3b（6 条默认 link）
