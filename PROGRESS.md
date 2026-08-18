@@ -72,9 +72,20 @@ First-phase integration shell is complete. The plugin can now be dropped into DS
 - [x] New RPC handlers: `permissionEngine.addInlineLink`, `permissionEngine.removeLink`
 - [x] All 59/59 tests pass
 
+### Step 4: Persistence via storageDomain
+
+- [x] `ConfigStorage` service opens a `permission-config` storage domain and persists chain state
+- [x] `PermissionEngine.saveState()` serializes enabled flags, order, and inline link source code
+- [x] `PermissionEngine.init()` restores inline links, enabled flags, and order from stored state
+- [x] All RPC handlers (`updateChain`, `addInlineLink`, `removeLink`, `reload`) call `saveState()` after mutations
+- [x] Graceful fallback when `storageDomain` is unavailable (state lives only in memory)
+- [x] Fixed `unregisterLink` to check `registration.registeredBy` instead of `link.registeredBy`
+- [x] `tests/persistence.test.js` with 9 tests (ConfigStorage + engine restoration + round-trip)
+- [x] All 68/68 tests pass
+
 ## Next Step
 
-Step 4: Persistence and configuration UI improvements (details TBD based on user feedback).
+Step 5 (TBD based on user feedback): UI/UX polish, import/export, preset templates, or end-to-end DSH self-test verification.
 
 ## Key Design Decisions
 

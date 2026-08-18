@@ -9,12 +9,21 @@ export class PermissionEngine {
     this.chain = new PermissionChain(this.registrations)
     this.loader = new Loader(ctx)
     this.memoryLinks = []
+    this.configStorage = null
+    this._inlineCodes = new Map()
+  }
+
+  setConfigStorage(storage) {
+    this.configStorage = storage
   }
 
   async init() {
     this.#registerDevLinks()
     if (this.config.useDefaults !== false) {
       await this.loadDefaults()
+    }
+    if (this.configStorage) {
+      await this.#restoreFromStorage()
     }
     await this.reloadFromSettings()
   }
@@ -29,9 +38,12 @@ export class PermissionEngine {
   unregisterLink(linkId) {
     const index = this.registrations.findIndex((r) => r.link.id === linkId)
     if (index >= 0) {
-      const link = this.registrations[index].link
+      const registration = this.registrations[index]
       this.registrations.splice(index, 1)
-      this.memoryLinks = this.memoryLinks.filter((l) => l !== link)
+      this.memoryLinks = this.memoryLinks.filter((l) => l !== registration.link)
+      if (registration.registeredBy === 'inline') {
+        this._inlineCodes.delete(linkId)
+      }
     }
     this.chain = new PermissionChain(this.registrations)
   }
@@ -126,6 +138,7 @@ export class PermissionEngine {
     result.link.id = id
     result.link.name = name
     result.link.description = description
+    this._inlineCodes.set(id, { name, description, code })
     this.registerLink(result.link, { order: opts.order ?? 300, registeredBy: 'inline' })
     return result
   }
@@ -145,10 +158,64 @@ export class PermissionEngine {
   #registerDevLinks() {
     const devLinks = this.config.devLinks ?? true
     if (!devLinks) return
-    // Dev links are loaded lazily via dynamic import so the core package stays testable
-    // without a hard dependency on the dev modules at the top level.
     import('../dev/allow-link.js').then((m) => this.registerLink(new m.AllowLink(), { order: 10, registeredBy: 'dev' }))
     import('../dev/deny-link.js').then((m) => this.registerLink(new m.DenyLink(), { order: 11, registeredBy: 'dev' }))
     import('../dev/echo-link.js').then((m) => this.registerLink(new m.EchoLink(), { order: 12, registeredBy: 'dev' }))
+  }
+
+  async #restoreFromStorage() {
+    if (!this.configStorage) return
+    const state = await this.configStorage.loadChainState()
+    if (!state) return
+
+    if (Array.isArray(state.inlineLinks)) {
+      for (const entry of state.inlineLinks) {
+        const { id, name, description, code } = entry
+        if (!id || !code) continue
+        const result = this.loadInlineLink(id, name ?? id, description ?? '', code)
+        if (result.error) {
+          this.ctx.logger?.warn(`[permission-engine] failed to restore inline link ${id}: ${result.error.message}`)
+        }
+      }
+    }
+
+    if (state.enabledById && typeof state.enabledById === 'object') {
+      for (const registration of this.registrations) {
+        const id = registration.link.id
+        if (id in state.enabledById) {
+          registration.enabled = Boolean(state.enabledById[id])
+        }
+      }
+    }
+
+    if (Array.isArray(state.orderIds) && state.orderIds.length > 0) {
+      const existing = new Set(this.registrations.map((r) => r.link.id))
+      const validOrder = state.orderIds.filter((id) => existing.has(id))
+      const missing = this.registrations.filter((r) => !validOrder.includes(r.link.id))
+      this.registrations = [
+        ...validOrder.map((id, idx) => {
+          const reg = this.registrations.find((r) => r.link.id === id)
+          return { ...reg, order: idx + 1 }
+        }),
+        ...missing,
+      ]
+    }
+
+    this.chain = new PermissionChain(this.registrations)
+  }
+
+  async saveState() {
+    if (!this.configStorage) return
+    const enabledById = {}
+    const orderIds = []
+    for (const registration of [...this.registrations].sort((a, b) => a.order - b.order)) {
+      const id = registration.link.id
+      if (registration.registeredBy === 'inline') {
+        enabledById[id] = registration.enabled
+      }
+      orderIds.push(id)
+    }
+    const inlineLinks = [...this._inlineCodes.entries()].map(([id, meta]) => ({ id, ...meta }))
+    await this.configStorage.saveChainState({ enabledById, orderIds, inlineLinks })
   }
 }

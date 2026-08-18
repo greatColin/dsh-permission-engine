@@ -2,242 +2,170 @@ export const name = 'permission-engine'
 
 export const inject = ['slots', 'locale']
 
-function useRpc(ctx, method, payload) {
-  const [data, setData] = React.useState(null)
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState(null)
+const NS = 'settings.permission-engine'
 
-  const call = React.useCallback(
-    async (overridePayload) => {
-      setLoading(true)
-      setError(null)
-      try {
-        const result = await host.call(method, overridePayload ?? payload)
-        setData(result)
-        return result
-      } catch (err) {
-        setError(err?.message ?? String(err))
-        throw err
-      } finally {
-        setLoading(false)
-      }
-    },
-    [ctx, method, payload],
-  )
+function ChainRow({ chain, t, onToggle, onMoveUp, onMoveDown, onRemove, onSelfTest }) {
+  const flat = chain.links
 
-  return { data, loading, error, call }
-}
-
-function ChainList({ ctx, chains, onChange }) {
-  const flat = chains.flatMap((g) => g.links)
-
-  const move = async (id, delta) => {
-    const idx = flat.findIndex((l) => l.id === id)
-    if (idx < 0) return
-    const newIdx = idx + delta
-    if (newIdx < 0 || newIdx >= flat.length) return
-    const next = [...flat]
-    const [item] = next.splice(idx, 1)
-    next.splice(newIdx, 0, item)
-    await host.call('permissionEngine.updateChain', { order: next.map((l) => l.id) })
-    onChange()
-  }
-
-  const toggle = async (id, enabled) => {
-    await host.call('permissionEngine.updateChain', { id, enabled: !enabled })
-    onChange()
-  }
-
-  const runSelfTest = async (id) => {
-    const result = await host.call('permissionEngine.runSelfTest', { id })
-    return result
-  }
-
-  const remove = async (id) => {
-    await host.call('permissionEngine.removeLink', { id })
-    onChange()
-  }
-
-  return React.createElement(
-    'div',
-    null,
-    chains.length === 0 &&
-      React.createElement('p', { style: { color: '#888' } }, 'permissionEngine.empty'),
-    chains.map((group) =>
-      React.createElement(
-        'div',
-        { key: group.source, style: { marginBottom: 24 } },
-        React.createElement(
-          'h3',
-          { style: { fontSize: 14, textTransform: 'uppercase', color: '#888', marginBottom: 8 } },
-          `${group.source}`,
-        ),
-        group.links.map((link) =>
-          React.createElement(
-            'div',
-            {
-              key: link.id,
-              style: {
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '10px 12px',
-                border: '1px solid #e5e7eb',
-                borderRadius: 8,
-                marginBottom: 8,
-                background: link.enabled ? '#fff' : '#f9fafb',
-              },
-            },
-            React.createElement(
-              'div',
-              { style: { flex: 1, minWidth: 0 } },
-              React.createElement(
-                'div',
-                { style: { fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
-                link.name || link.id,
-              ),
-              link.description &&
-                React.createElement(
-                  'div',
-                  { style: { fontSize: 12, color: '#6b7280', marginTop: 2 } },
-                  link.description,
-                ),
-              React.createElement(
-                'div',
-                { style: { fontSize: 11, color: '#9ca3af', marginTop: 4 } },
-                `ID: ${link.id} · ${'permissionEngine.order'} ${link.order}`,
-              ),
-            ),
-            React.createElement(
-              'button',
-              {
-                onClick: () => move(link.id, -1),
-                disabled: link.id === flat[0]?.id,
-                style: { padding: '4px 8px' },
-              },
-              '↑',
-            ),
-            React.createElement(
-              'button',
-              {
-                onClick: () => move(link.id, 1),
-                disabled: link.id === flat[flat.length - 1]?.id,
-                style: { padding: '4px 8px' },
-              },
-              '↓',
-            ),
-            React.createElement(
-              'label',
-              { style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' } },
-              React.createElement('input', {
-                type: 'checkbox',
-                checked: link.enabled,
-                onChange: () => toggle(link.id, link.enabled),
-              }),
-              'permissionEngine.enabled',
-            ),
-            React.createElement(
-              SelfTestButton,
-              { onRun: () => runSelfTest(link.id) },
-            ),
-            React.createElement(
-              'button',
-              {
-                onClick: () => remove(link.id),
-                style: { padding: '4px 8px', color: '#dc2626' },
-              },
-              'permissionEngine.remove',
-            ),
-          ),
-        ),
-      ),
-    ),
-  )
-}
-
-function SelfTestButton({ onRun }) {
-  const [result, setResult] = React.useState(null)
-  const [open, setOpen] = React.useState(false)
-
-  const handleClick = async () => {
-    const res = await onRun()
-    setResult(res)
-    setOpen(true)
-  }
-
-  return React.createElement(
-    React.Fragment,
-    null,
+  return flat.map((link) =>
     React.createElement(
-      'button',
-      { onClick: handleClick, style: { padding: '4px 8px' } },
-      'permissionEngine.selfTest',
-    ),
-    open &&
+      'div',
+      {
+        key: link.id,
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '10px 12px',
+          border: '1px solid #e5e7eb',
+          borderRadius: 8,
+          marginBottom: 8,
+          background: link.enabled ? '#fff' : '#f9fafb',
+        },
+      },
       React.createElement(
         'div',
-        {
-          style: {
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          },
-          onClick: () => setOpen(false),
-        },
+        { style: { flex: 1, minWidth: 0 } },
         React.createElement(
           'div',
-          {
-            style: {
-              background: '#fff',
-              padding: 20,
-              borderRadius: 8,
-              maxWidth: 500,
-              width: '90%',
-              maxHeight: '80vh',
-              overflow: 'auto',
-            },
-            onClick: (e) => e.stopPropagation(),
-          },
-          React.createElement('h4', null, 'permissionEngine.selfTestResult'),
+          { style: { fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
+          link.name || link.id,
+        ),
+        link.description &&
           React.createElement(
-            'pre',
-            { style: { fontSize: 12, background: '#f3f4f6', padding: 12, borderRadius: 4 } },
-            JSON.stringify(result, null, 2),
+            'div',
+            { style: { fontSize: 12, color: '#6b7280', marginTop: 2 } },
+            link.description,
           ),
-          React.createElement(
-            'button',
-            { onClick: () => setOpen(false), style: { marginTop: 12 } },
-            'permissionEngine.close',
-          ),
+        React.createElement(
+          'div',
+          { style: { fontSize: 11, color: '#9ca3af', marginTop: 4 } },
+          `ID: ${link.id} · ${t('order')} ${link.order}`,
         ),
       ),
+      React.createElement(
+        'button',
+        { onClick: () => onMoveUp(link.id), disabled: link.id === flat[0]?.id, style: { padding: '4px 8px' } },
+        '↑',
+      ),
+      React.createElement(
+        'button',
+        { onClick: () => onMoveDown(link.id), disabled: link.id === flat[flat.length - 1]?.id, style: { padding: '4px 8px' } },
+        '↓',
+      ),
+      React.createElement(
+        'label',
+        { style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' } },
+        React.createElement('input', {
+          type: 'checkbox',
+          checked: link.enabled,
+          onChange: () => onToggle(link.id, link.enabled),
+        }),
+        t('enabled'),
+      ),
+      React.createElement(
+        'button',
+        { onClick: () => onSelfTest(link.id), style: { padding: '4px 8px' } },
+        t('selfTest'),
+      ),
+      React.createElement(
+        'button',
+        { onClick: () => onRemove(link.id), style: { padding: '4px 8px', color: '#dc2626' } },
+        t('remove'),
+      ),
+    ),
   )
 }
 
-function InlineEditor({ ctx, onChange }) {
+function ChainGroup({ group, t, onToggle, onMoveUp, onMoveDown, onRemove, onSelfTest }) {
+  return React.createElement(
+    'div',
+    { key: group.source, style: { marginBottom: 24 } },
+    React.createElement(
+      'h3',
+      { style: { fontSize: 14, textTransform: 'uppercase', color: '#888', marginBottom: 8 } },
+      group.source,
+    ),
+    React.createElement(ChainRow, {
+      chain: group,
+      t,
+      onToggle,
+      onMoveUp,
+      onMoveDown,
+      onRemove,
+      onSelfTest,
+    }),
+  )
+}
+
+function SelfTestModal({ linkId, result, onClose }) {
+  return React.createElement(
+    'div',
+    {
+      style: {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0.4)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+      },
+      onClick: onClose,
+    },
+    React.createElement(
+      'div',
+      {
+        style: {
+          background: '#fff',
+          padding: 20,
+          borderRadius: 8,
+          maxWidth: 500,
+          width: '90%',
+          maxHeight: '80vh',
+          overflow: 'auto',
+        },
+        onClick: (e) => e.stopPropagation(),
+      },
+      React.createElement('h4', null, `Self-test: ${linkId}`),
+      React.createElement(
+        'pre',
+        { style: { fontSize: 12, background: '#f3f4f6', padding: 12, borderRadius: 4, overflow: 'auto' } },
+        JSON.stringify(result, null, 2),
+      ),
+      React.createElement(
+        'button',
+        { onClick: onClose, style: { marginTop: 12, padding: '6px 12px' } },
+        'Close',
+      ),
+    ),
+  )
+}
+
+function InlineEditor({ t, onAdd }) {
   const [id, setId] = React.useState('')
   const [name, setName] = React.useState('')
   const [description, setDescription] = React.useState('')
-  const [code, setCode] = React.useState(`// Implement decide(input, context) and optionally selfTest()
+  const [code, setCode] = React.useState(
+    `// Return a plain object or a ChainLink subclass
 return {
   id: 'my-link',
   name: 'My Link',
   description: 'A custom permission link.',
-  decide(input, context) {
-    return { decision: 'pass' }
+  decide(input) {
+    // Return null to pass through
+    // Or return { kind: 'deny', reason: '...' } or { kind: 'ask', reason: '...' }
+    return null
   },
-  selfTest() {
-    return [{ ok: true, message: 'basic' }]
+  async runSelfTest() {
+    return [{ name: 'basic', passed: true, actual: 'pass', expected: 'pass' }]
   },
 }
-`)
+`,
+  )
   const [error, setError] = React.useState(null)
   const [busy, setBusy] = React.useState(false)
 
@@ -245,12 +173,11 @@ return {
     setBusy(true)
     setError(null)
     try {
-      const res = await host.call('permissionEngine.addInlineLink', { id, name, description, code })
+      const res = await onAdd({ id, name, description, code })
       if (res?.error) throw new Error(res.error)
       setId('')
       setName('')
       setDescription('')
-      onChange()
     } catch (err) {
       setError(err?.message ?? String(err))
     } finally {
@@ -261,125 +188,186 @@ return {
   return React.createElement(
     'div',
     { style: { marginTop: 24, borderTop: '1px solid #e5e7eb', paddingTop: 16 } },
-    React.createElement('h3', null, 'permissionEngine.addInlineLink'),
+    React.createElement('h3', null, t('addInlineLink')),
     error && React.createElement('div', { style: { color: '#dc2626', marginBottom: 12 } }, error),
     React.createElement(
       'div',
       { style: { display: 'grid', gap: 12 } },
       React.createElement('input', {
-        placeholder: 'permissionEngine.inlineId',
+        placeholder: t('inlineId'),
         value: id,
         onChange: (e) => setId(e.target.value),
-        style: { padding: 8 },
+        style: { padding: 8, width: '100%', boxSizing: 'border-box' },
       }),
       React.createElement('input', {
-        placeholder: 'permissionEngine.inlineName',
+        placeholder: t('inlineName'),
         value: name,
         onChange: (e) => setName(e.target.value),
-        style: { padding: 8 },
+        style: { padding: 8, width: '100%', boxSizing: 'border-box' },
       }),
       React.createElement('input', {
-        placeholder: 'permissionEngine.inlineDescription',
+        placeholder: t('inlineDescription'),
         value: description,
         onChange: (e) => setDescription(e.target.value),
-        style: { padding: 8 },
+        style: { padding: 8, width: '100%', boxSizing: 'border-box' },
       }),
       React.createElement('textarea', {
         value: code,
         onChange: (e) => setCode(e.target.value),
         rows: 12,
-        style: { padding: 8, fontFamily: 'monospace', fontSize: 13 },
+        style: { padding: 8, fontFamily: 'monospace', fontSize: 13, width: '100%', boxSizing: 'border-box' },
       }),
       React.createElement(
         'button',
-        { onClick: submit, disabled: busy || !id || !code, style: { padding: '8px 16px' } },
-        busy ? 'permissionEngine.adding' : 'permissionEngine.add',
+        {
+          onClick: submit,
+          disabled: busy || !id || !code,
+          style: { padding: '8px 16px' },
+        },
+        busy ? t('adding') : t('add'),
       ),
     ),
   )
 }
 
-function PermissionEngineSettings(ctx) {
-  return function SettingsComponent() {
-    const [chains, setChains] = React.useState([])
-    const [loading, setLoading] = React.useState(true)
-    const [error, setError] = React.useState(null)
+function PermissionEnginePage({ t }) {
+  const [groups, setGroups] = React.useState([])
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState(null)
+  const [selfTest, setSelfTest] = React.useState(null)
 
-    const load = React.useCallback(async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const result = await host.call('permissionEngine.listChains')
-        setChains(result?.groups ?? [])
-      } catch (err) {
-        setError(err?.message ?? String(err))
-      } finally {
-        setLoading(false)
-      }
-    }, [ctx])
+  const load = React.useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await host.call('permissionEngine.listChains')
+      setGroups(result?.groups ?? [])
+    } catch (err) {
+      setError(err?.message ?? String(err))
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-    React.useEffect(() => {
-      load()
-    }, [load])
+  React.useEffect(() => {
+    load()
+  }, [load])
 
-    return React.createElement(
-      'div',
-      { style: { padding: 16, maxWidth: 800 } },
-      React.createElement(
-        'div',
-        { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 } },
-        React.createElement('h2', null, 'permissionEngine.title'),
-        React.createElement(
-          'button',
-          { onClick: load, disabled: loading, style: { padding: '6px 12px' } },
-          loading ? 'permissionEngine.loading' : 'permissionEngine.reload',
-        ),
-      ),
-      error && React.createElement('div', { style: { color: '#dc2626', marginBottom: 12 } }, error),
-      loading
-        ? React.createElement('p', null, 'permissionEngine.loading')
-        : React.createElement(ChainList, { ctx, chains, onChange: load }),
-      React.createElement(InlineEditor, { ctx, onChange: load }),
-    )
+  const handleToggle = async (id, currentEnabled) => {
+    await host.call('permissionEngine.updateChain', { id, enabled: !currentEnabled })
+    await load()
   }
+
+  const handleMoveUp = async (id) => {
+    const flat = groups.flatMap((g) => g.links)
+    const idx = flat.findIndex((l) => l.id === id)
+    if (idx <= 0) return
+    const next = [...flat]
+    const [item] = next.splice(idx, 1)
+    next.splice(idx - 1, 0, item)
+    await host.call('permissionEngine.updateChain', { order: next.map((l) => l.id) })
+    await load()
+  }
+
+  const handleMoveDown = async (id) => {
+    const flat = groups.flatMap((g) => g.links)
+    const idx = flat.findIndex((l) => l.id === id)
+    if (idx < 0 || idx >= flat.length - 1) return
+    const next = [...flat]
+    const [item] = next.splice(idx, 1)
+    next.splice(idx + 1, 0, item)
+    await host.call('permissionEngine.updateChain', { order: next.map((l) => l.id) })
+    await load()
+  }
+
+  const handleRemove = async (id) => {
+    await host.call('permissionEngine.removeLink', { id })
+    await load()
+  }
+
+  const handleSelfTest = async (id) => {
+    const result = await host.call('permissionEngine.runSelfTest', { id })
+    setSelfTest({ id, result })
+  }
+
+  const handleAddInline = async ({ id, name, description, code }) => {
+    const res = await host.call('permissionEngine.addInlineLink', { id, name, description, code })
+    if (res?.error) throw new Error(res.error)
+    await load()
+  }
+
+  return React.createElement(
+    'div',
+    { style: { padding: 16, maxWidth: 800 } },
+    React.createElement(
+      'div',
+      { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 } },
+      React.createElement('h2', null, t('title')),
+      React.createElement(
+        'button',
+        { onClick: load, disabled: loading, style: { padding: '6px 12px' } },
+        loading ? t('loading') : t('reload'),
+      ),
+    ),
+    error && React.createElement('div', { style: { color: '#dc2626', marginBottom: 12 } }, error),
+    loading
+      ? React.createElement('p', null, t('loading'))
+      : groups.length === 0
+        ? React.createElement('p', { style: { color: '#888' } }, t('empty'))
+        : groups.map((g) =>
+            React.createElement(ChainGroup, {
+              key: g.source,
+              group: g,
+              t,
+              onToggle: handleToggle,
+              onMoveUp: handleMoveUp,
+              onMoveDown: handleMoveDown,
+              onRemove: handleRemove,
+              onSelfTest: handleSelfTest,
+            }),
+          ),
+    React.createElement(InlineEditor, { t, onAdd: handleAddInline }),
+    selfTest &&
+      React.createElement(SelfTestModal, {
+        linkId: selfTest.id,
+        result: selfTest.result,
+        onClose: () => setSelfTest(null),
+      }),
+  )
 }
 
 export function apply(ctx) {
-  ctx.locale.register('en', {
-    'permissionEngine.title': 'Permission Engine',
-    'permissionEngine.loading': 'Loading…',
-    'permissionEngine.empty': 'No permission links registered.',
-    'permissionEngine.order': 'order',
-    'permissionEngine.enabled': 'enabled',
-    'permissionEngine.selfTest': 'Self-test',
-    'permissionEngine.selfTestResult': 'Self-test result',
-    'permissionEngine.remove': 'Remove',
-    'permissionEngine.close': 'Close',
-    'permissionEngine.reload': 'Reload',
-    'permissionEngine.addInlineLink': 'Add inline link',
-    'permissionEngine.inlineId': 'Link ID',
-    'permissionEngine.inlineName': 'Display name',
-    'permissionEngine.inlineDescription': 'Description',
-    'permissionEngine.add': 'Add link',
-    'permissionEngine.adding': 'Adding…',
+  ctx.locale.register(NS, 'en', {
+    title: 'Permission Engine',
+    loading: 'Loading…',
+    empty: 'No permission links registered.',
+    order: 'order',
+    enabled: 'enabled',
+    selfTest: 'Self-test',
+    remove: 'Remove',
+    reload: 'Reload',
+    addInlineLink: 'Add inline link',
+    inlineId: 'Link ID',
+    inlineName: 'Display name',
+    inlineDescription: 'Description',
+    add: 'Add link',
+    adding: 'Adding…',
   })
-  ctx.locale.register('zh', {
-    'permissionEngine.title': '权限引擎',
-    'permissionEngine.loading': '加载中…',
-    'permissionEngine.empty': '没有已注册的权限链。',
-    'permissionEngine.order': '顺序',
-    'permissionEngine.enabled': '启用',
-    'permissionEngine.selfTest': '自检',
-    'permissionEngine.selfTestResult': '自检结果',
-    'permissionEngine.remove': '移除',
-    'permissionEngine.close': '关闭',
-    'permissionEngine.reload': '刷新',
-    'permissionEngine.addInlineLink': '添加内联链',
-    'permissionEngine.inlineId': '链 ID',
-    'permissionEngine.inlineName': '显示名称',
-    'permissionEngine.inlineDescription': '描述',
-    'permissionEngine.add': '添加链',
-    'permissionEngine.adding': '添加中…',
+  ctx.locale.register(NS, 'zh', {
+    title: '权限引擎',
+    loading: '加载中…',
+    empty: '没有已注册的权限链。',
+    order: '顺序',
+    enabled: '启用',
+    selfTest: '自检',
+    remove: '移除',
+    reload: '刷新',
+    addInlineLink: '添加内联链',
+    inlineId: '链 ID',
+    inlineName: '显示名称',
+    inlineDescription: '描述',
+    add: '添加链',
+    adding: '添加中…',
   })
 
   ctx.slots.inject('settings.section', () =>
@@ -388,9 +376,11 @@ export function apply(ctx) {
         name: 'settings.section',
         id: 'permission-engine',
         order: 100,
-        label: 'permissionEngine.title',
+        label: () => ctx.locale.bind(NS)('title'),
+        locale: NS,
+        inject: () => ({}),
       },
-      PermissionEngineSettings(ctx),
+      PermissionEnginePage,
     ),
   )
 }

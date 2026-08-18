@@ -1,6 +1,7 @@
 import { PermissionEngine } from './services/PermissionEngine.js'
 import { DshHooks } from './integration/dsh-hooks.js'
 import { AuditLogService } from './integration/audit-log.js'
+import { ConfigStorage } from './integration/config-storage.js'
 import { installPermissionSettings } from './integration/settings.js'
 import { registerHostRpc } from './integration/host-rpc.js'
 
@@ -10,6 +11,14 @@ export const inject = ['tools']
 
 export async function apply(ctx, config) {
   const engine = new PermissionEngine(ctx, config)
+
+  const configStorage = new ConfigStorage(ctx)
+  await configStorage.init()
+  engine.setConfigStorage(configStorage)
+  ctx.effect(() => {
+    return () => configStorage.dispose()
+  })
+
   ctx.provide('permissionEngine', engine)
 
   await installPermissionSettings(ctx, config, engine)
