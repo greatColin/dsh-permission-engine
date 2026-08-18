@@ -8,6 +8,7 @@ export class PermissionEngine {
     this.registrations = []
     this.chain = new PermissionChain(this.registrations)
     this.loader = new Loader(ctx)
+    this.memoryLinks = []
   }
 
   async init() {
@@ -21,12 +22,17 @@ export class PermissionEngine {
   registerLink(link, opts = {}) {
     const { order = 100, enabled = true, registeredBy = 'user' } = opts
     this.registrations.push({ link, order, enabled, registeredBy })
+    if (typeof link.remember === 'function') this.memoryLinks.push(link)
     this.chain = new PermissionChain(this.registrations)
   }
 
   unregisterLink(linkId) {
     const index = this.registrations.findIndex((r) => r.link.id === linkId)
-    if (index >= 0) this.registrations.splice(index, 1)
+    if (index >= 0) {
+      const link = this.registrations[index].link
+      this.registrations.splice(index, 1)
+      this.memoryLinks = this.memoryLinks.filter((l) => l !== link)
+    }
     this.chain = new PermissionChain(this.registrations)
   }
 
@@ -47,7 +53,18 @@ export class PermissionEngine {
   }
 
   async decide(input, opts = {}) {
-    return this.chain.run(input)
+    const result = await this.chain.run(input)
+    const decision = result.decision
+    if (decision?.kind && decision.kind !== 'pass') {
+      for (const link of this.memoryLinks) {
+        try {
+          await link.remember(input, decision)
+        } catch (error) {
+          this.ctx.logger?.warn(`[permission-engine] remember failed: ${error.message}`)
+        }
+      }
+    }
+    return result
   }
 
   async runSelfTest(linkId) {
@@ -83,7 +100,7 @@ export class PermissionEngine {
       const defaults = await import('@yourname/dsh-permission-engine-defaults')
       const register = defaults.registerLinks ?? defaults.default
       if (typeof register === 'function') {
-        register(this, this.ctx)
+        await register(this, this.ctx)
       }
     } catch (error) {
       this.ctx.logger?.warn(`[permission-engine] failed to load defaults: ${error.message}`)

@@ -2,34 +2,36 @@
 
 ## 当前状态
 
-Step 3a 完成：`PermissionEngine` service、`tools/pre-execute` 监听（DshHooks）、`ctx.storageDomain` 审计（AuditLogService）、settings 集成、defaults 包动态加载入口 + full-flow 集成测试通过。累计 32/32 测试通过。Step 3b（6 条默认 link）待启动。
+Step 3b 完成：defaults 包实现 6 条默认 link（L0 hard-deny、L1 safe-read、L2 allowlist、L3a risk-scoring、L3b llm-review、L4 remember），并通过 27 个单测；框架包新增 `./chain/link`、`./chain/chain`、`./services/engine` 子路径导出。累计 59/59 测试通过。Step 3a 已提交。Step 3c（CLIENT 半 UI）待启动，需要确认依赖与 DSH Client RPC API 细节。
 
 ## 任务清单
 
-### Step 3a：引擎与 DSH 集成（HOST 半）
-
-- [x] 3a.1 实现 `PermissionEngine` Service（registerLink/setEnabled/reorder/decide/runSelfTest/listChainsForUI/reloadFromSettings），移至 `lib/services/PermissionEngine.js`
-- [x] 3a.2 实现 `DshHooks`：`ctx.on('tools/pre-execute')` 监听，allow→`return next()`、deny/ask→返回决策（D1）
-- [x] 3a.3 实现 `AuditLogService`（`ctx.storageDomain` domain 表 + append/query/export）
-- [x] 3a.4 settings 集成：通过 `ctx.settings.register` 注册 `permission-engine` namespace（`installPermissionSettings` helper）
-- [x] 3a.5 沙箱感知与上下文感知（`ctx.get('sandbox')`、sessionId/workspaceId，取不到给安全默认值）
-- [x] 3a.6 defaults 包注册入口：框架包动态 `import()` defaults 的 `registerLinks(engine, ctx)`（D2）
-- [x] 3a.7 单测：`tests/integration/full-flow.test.js`（mock ctx + 手动触发 pre-execute：`rm -rf /`→deny、`ls -la`→allow、审计落库）
-
 ### Step 3b：defaults 包 6 条默认 link
 
-- [ ] 3b.1 L0 HardDenyLink（硬拒绝正则）+ static tests
-- [ ] 3b.2 L1 SafeReadLink（只读命令集）+ static tests
-- [ ] 3b.3 L2 AllowlistLink（白名单前缀）+ static tests
-- [ ] 3b.4 L3a RiskScoringLink（评分 JS）+ static tests
-- [ ] 3b.5 L3b LlmReviewLink（ctx.llm + AbortController 超时降级 allow）+ static tests
-- [ ] 3b.6 L4 RememberLink（记忆 TTL）+ static tests
-- [ ] 3b.7 defaults 包单测：`tests/links/*.test.js`（每条 link ≥3 用例）
+- [x] 3b.1 L0 HardDenyLink（硬拒绝正则）+ static tests
+- [x] 3b.2 L1 SafeReadLink（只读命令集）+ static tests
+- [x] 3b.3 L2 AllowlistLink（白名单前缀）+ static tests
+- [x] 3b.4 L3a RiskScoringLink（评分 JS）+ static tests
+- [x] 3b.5 L3b LlmReviewLink（ctx.llm + AbortController 超时降级 allow）+ static tests
+- [x] 3b.6 L4 RememberLink（记忆 TTL）+ static tests
+- [x] 3b.7 defaults 包单测：`tests/links/*.test.js` + `register-links.test.js`（27 条通过）
+
+### Step 3c：CLIENT 半 UI（React + RPC）
+
+- [ ] 3c.1 确定 CLIENT 半依赖与 RPC API（是否引入 CodeMirror、`ctx.host.call` 是否可用）
+- [ ] 3c.2 实现 `lib/client.js`：`inject` 声明 + `apply` 注册设置页面 slot
+- [ ] 3c.3 实现 React 设置页面：链列表、启用/禁用、排序、内联编辑（CodeMirror 或 textarea）
+- [ ] 3c.4 实现 HOST 半 RPC handler：`host.call('permissionEngine.listChains')`、`host.call('permissionEngine.updateChain')`、`host.call('permissionEngine.runSelfTest')`、`host.call('permissionEngine.reload')`
+- [ ] 3c.5 i18n：`ctx.locale.register` 注册中英文 key
+- [ ] 3c.6 组件测试：mock ctx + 渲染 + RPC 调用断言
 
 ## 下一步
 
-1. Step 3b：实现 defaults 包 6 条 link（L0-L4）+ static tests + defaults 包单测
-2. 完成后提交 Step 3b，继续 Step 3c（CLIENT 半 UI）
+1. 与用户确认 Step 3c 的两个问题：
+   - 是否允许在框架包中添加 `@uiw/react-codemirror` 与 `@codemirror/lang-javascript` 依赖？
+   - DSH Client Runtime 中 RPC 调用实际 API 是 `ctx.host.call(...)`、`ctx.remote.call(...)` 还是其他？如你已知请提供。
+2. 根据确认结果实现 CLIENT 半 UI 与 HOST 半 RPC handler。
+3. Step 3c 完成后停下问用户。
 
 ### Step 3c：CLIENT 半 UI
 

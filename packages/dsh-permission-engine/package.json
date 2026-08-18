@@ -8,6 +8,8 @@
     ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
     "./client": { "types": "./lib/types/client/index.d.ts", "default": "./lib/client.js" },
     "./chain/link": { "types": "./lib/types/chain.d.ts", "default": "./lib/chain/link.js" },
+    "./chain/chain": { "types": "./lib/types/chain.d.ts", "default": "./lib/chain/chain.js" },
+    "./services/engine": { "types": "./lib/types/services.d.ts", "default": "./lib/services/PermissionEngine.js" },
     "./package.json": "./package.json"
   },
   "files": [
