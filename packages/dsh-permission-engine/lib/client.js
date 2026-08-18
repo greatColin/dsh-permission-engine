@@ -1,6 +1,6 @@
 export const name = 'permission-engine'
 
-export const inject = ['slots', 'locale', 'host']
+export const inject = ['slots', 'locale']
 
 function useRpc(ctx, method, payload) {
   const [data, setData] = React.useState(null)
@@ -12,7 +12,7 @@ function useRpc(ctx, method, payload) {
       setLoading(true)
       setError(null)
       try {
-        const result = await ctx.host.call(method, overridePayload ?? payload)
+        const result = await host.call(method, overridePayload ?? payload)
         setData(result)
         return result
       } catch (err) {
@@ -39,22 +39,22 @@ function ChainList({ ctx, chains, onChange }) {
     const next = [...flat]
     const [item] = next.splice(idx, 1)
     next.splice(newIdx, 0, item)
-    await ctx.host.call('permissionEngine.updateChain', { order: next.map((l) => l.id) })
+    await host.call('permissionEngine.updateChain', { order: next.map((l) => l.id) })
     onChange()
   }
 
   const toggle = async (id, enabled) => {
-    await ctx.host.call('permissionEngine.updateChain', { id, enabled: !enabled })
+    await host.call('permissionEngine.updateChain', { id, enabled: !enabled })
     onChange()
   }
 
   const runSelfTest = async (id) => {
-    const result = await ctx.host.call('permissionEngine.runSelfTest', { id })
+    const result = await host.call('permissionEngine.runSelfTest', { id })
     return result
   }
 
   const remove = async (id) => {
-    await ctx.host.call('permissionEngine.removeLink', { id })
+    await host.call('permissionEngine.removeLink', { id })
     onChange()
   }
 
@@ -245,7 +245,7 @@ return {
     setBusy(true)
     setError(null)
     try {
-      const res = await ctx.host.call('permissionEngine.addInlineLink', { id, name, description, code })
+      const res = await host.call('permissionEngine.addInlineLink', { id, name, description, code })
       if (res?.error) throw new Error(res.error)
       setId('')
       setName('')
@@ -309,7 +309,7 @@ function PermissionEngineSettings(ctx) {
       setLoading(true)
       setError(null)
       try {
-        const result = await ctx.host.call('permissionEngine.listChains')
+        const result = await host.call('permissionEngine.listChains')
         setChains(result?.groups ?? [])
       } catch (err) {
         setError(err?.message ?? String(err))
