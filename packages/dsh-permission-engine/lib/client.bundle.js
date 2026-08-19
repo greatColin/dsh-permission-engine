@@ -377,15 +377,16 @@ window.__ModuleLoader__.load({
         adding: '添加中…',
       })
     
+      const t = ctx.locale.bind(NS)
+    
       ctx.slots.inject('settings.section', () =>
         ctx.slots.register(
           {
             name: 'settings.section',
             id: 'permission-engine',
             order: 100,
-            label: () => ctx.locale.bind(NS)('title'),
-            locale: NS,
-            inject: () => ({}),
+            label: () => t('title'),
+            inject: () => ({ t }),
           },
           PermissionEnginePage,
         ),
